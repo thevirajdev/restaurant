@@ -297,6 +297,7 @@ const Profile = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
             className="glass-card rounded-xl p-6 mt-8"
+            id="my-reservations"
           >
             <div className="mb-4">
               <h2 className="text-xl font-display text-foreground">My Reservations</h2>
