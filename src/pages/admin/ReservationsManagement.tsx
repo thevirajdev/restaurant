@@ -31,7 +31,12 @@ export default function AdminReservations() {
         .from('reservations')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) { setReservations([]); setLoading(false); return; }
+      if (error) {
+        console.error('Failed to load reservations:', error);
+        setReservations([]);
+        setLoading(false);
+        return;
+      }
 
       setReservations((base as any) || []);
 
@@ -55,6 +60,18 @@ export default function AdminReservations() {
     };
 
     fetchData();
+
+    // Subscribe to realtime changes so admin list updates automatically
+    const channel = supabase
+      .channel('admin-reservations')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch {}
+    };
   }, []);
 
   if (loading) {

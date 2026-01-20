@@ -1,16 +1,19 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Users, Check } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import interior from '@/assets/interior.jpg';
+import { supabase } from '@/integrations/supabase/client';
 
 const timeSlots = ['5:30 PM', '6:00 PM', '6:30 PM', '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM', '9:00 PM', '9:30 PM'];
 const partySizes = [2, 3, 4, 5, 6, 7, 8];
 
 const Reservations = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     date: '',
@@ -31,15 +34,85 @@ const Reservations = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      // Require authentication before creating a reservation
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast({
+          title: 'Sign in required',
+          description: 'Please sign in to complete your reservation.',
+        });
+        setIsSubmitting(false);
+        navigate('/auth');
+        return;
+      }
 
-    toast({
-      title: 'Reservation Confirmed!',
-      description: `Your table for ${formData.guests} on ${formData.date} at ${formData.time} has been reserved.`,
-    });
+      const { data: userRes } = await supabase.auth.getUser();
+      const userId = userRes?.user?.id ?? null;
 
-    setStep(4);
-    setIsSubmitting(false);
+      const { data: inserted, error } = await supabase
+        .from('reservations')
+        .insert([
+          {
+            user_id: userId,
+            name: formData.name || null,
+            phone: formData.phone || null,
+            email: formData.email || null,
+            date: formData.date || null,
+            time: formData.time || null,
+            party_size: formData.guests || null,
+            status: 'pending',
+            notes: formData.specialRequests || null,
+          },
+        ])
+        .select('id')
+        .single();
+
+      if (error || !inserted?.id) {
+        if (error) console.error('Reservation insert error:', error);
+        toast({
+          title: 'Reservation Failed',
+          description: error?.message || 'Could not save your reservation. Please try again.',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('Reservation inserted with id:', inserted.id);
+
+      // Double-check persistence by reading the row back once
+      const { data: verifyRow, error: verifyError } = await supabase
+        .from('reservations')
+        .select('id')
+        .eq('id', inserted.id)
+        .single();
+
+      if (verifyError || !verifyRow?.id) {
+        console.error('Reservation verify read failed:', verifyError);
+        toast({
+          title: 'Reservation Saved? Please Verify',
+          description: 'We could not immediately verify the reservation in the database. Please refresh Admin → Reservations after a moment.',
+        });
+        setStep(4);
+        return;
+      }
+
+      toast({
+        title: 'Reservation Confirmed!',
+        description: `Your table for ${formData.guests} on ${formData.date} at ${formData.time} has been reserved. Ref: ${inserted.id}`,
+      });
+
+      setStep(4);
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const canProceed = () => {
