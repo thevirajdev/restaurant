@@ -46,9 +46,8 @@ const Reservations = () => {
         navigate('/auth');
         return;
       }
-
-      const { data: userRes } = await supabase.auth.getUser();
-      const userId = userRes?.user?.id ?? null;
+      const userId = session.user.id;
+      console.log('Submitting reservation to project:', (import.meta as any).env?.VITE_SUPABASE_URL, 'as user:', userId);
 
       const { data: inserted, error } = await supabase
         .from('reservations')
