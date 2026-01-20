@@ -60,6 +60,26 @@ function ExchangeSessionHandler() {
           window.history.replaceState({}, '', url.toString());
         } catch {}
       });
+      return;
+    }
+
+    // Handle magic-link style hashes like: #access_token=...&refresh_token=...&token_type=bearer&type=magiclink
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      const hash = window.location.hash.replace(/^#/, '');
+      const params = new URLSearchParams(hash);
+      const access_token = params.get('access_token') || undefined;
+      const refresh_token = params.get('refresh_token') || undefined;
+
+      if (access_token && refresh_token) {
+        supabase.auth.setSession({ access_token, refresh_token }).finally(() => {
+          try {
+            // Clean the hash from the URL after processing
+            const url = new URL(window.location.href);
+            url.hash = '';
+            window.history.replaceState({}, '', url.toString());
+          } catch {}
+        });
+      }
     }
   }, [location.search]);
   return null;
