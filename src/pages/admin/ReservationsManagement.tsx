@@ -4,6 +4,7 @@ import { Loader2, CalendarDays } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface Reservation {
   id: string;
@@ -20,6 +21,7 @@ interface Reservation {
 }
 
 export default function AdminReservations() {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [profilesByUser, setProfilesByUser] = useState<Record<string, any>>({});
@@ -112,7 +114,7 @@ export default function AdminReservations() {
             <TableBody>
               {reservations.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     No reservations found
                   </TableCell>
                 </TableRow>
@@ -131,7 +133,12 @@ export default function AdminReservations() {
                         .from('reservations')
                         .update({ status })
                         .eq('id', id);
-                      if (error) console.error('Failed to update status', error);
+                      if (error) {
+                        console.error('Failed to update status', error);
+                        toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+                      } else {
+                        toast({ title: 'Status updated', description: `Reservation marked as ${status}.` });
+                      }
                     } finally {
                       setActionLoadingId(null);
                     }
@@ -144,7 +151,12 @@ export default function AdminReservations() {
                         .from('reservations')
                         .delete()
                         .eq('id', id);
-                      if (error) console.error('Failed to delete reservation', error);
+                      if (error) {
+                        console.error('Failed to delete reservation', error);
+                        toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
+                      } else {
+                        toast({ title: 'Reservation deleted' });
+                      }
                     } finally {
                       setActionLoadingId(null);
                     }
@@ -169,9 +181,18 @@ export default function AdminReservations() {
                       <TableCell className="max-w-xs truncate">{r.notes || '-'}</TableCell>
                       <TableCell>{created}</TableCell>
                       <TableCell className="space-x-2 whitespace-nowrap">
-                        <Button size="sm" variant="outline" disabled={actionLoadingId === r.id} onClick={() => onUpdateStatus(r.id, 'confirmed')}>Confirm</Button>
-                        <Button size="sm" variant="outline" disabled={actionLoadingId === r.id} onClick={() => onUpdateStatus(r.id, 'cancelled')}>Cancel</Button>
-                        <Button size="sm" variant="destructive" disabled={actionLoadingId === r.id} onClick={() => onDelete(r.id)}>Delete</Button>
+                        <Button size="sm" variant="outline" disabled={actionLoadingId === r.id} onClick={() => onUpdateStatus(r.id, 'confirmed')}>
+                          {actionLoadingId === r.id ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                          Confirm
+                        </Button>
+                        <Button size="sm" variant="outline" disabled={actionLoadingId === r.id} onClick={() => onUpdateStatus(r.id, 'cancelled')}>
+                          {actionLoadingId === r.id ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                          Cancel
+                        </Button>
+                        <Button size="sm" variant="destructive" disabled={actionLoadingId === r.id} onClick={() => onDelete(r.id)}>
+                          {actionLoadingId === r.id ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+                          Delete
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
