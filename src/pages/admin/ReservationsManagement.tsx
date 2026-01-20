@@ -138,6 +138,8 @@ export default function AdminReservations() {
                         toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
                       } else {
                         toast({ title: 'Status updated', description: `Reservation marked as ${status}.` });
+                        // Optimistically update local state so no manual refresh is needed
+                        setReservations(prev => prev.map(item => item.id === id ? { ...item, status } : item));
                       }
                     } finally {
                       setActionLoadingId(null);
@@ -156,6 +158,8 @@ export default function AdminReservations() {
                         toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
                       } else {
                         toast({ title: 'Reservation deleted' });
+                        // Remove from list immediately
+                        setReservations(prev => prev.filter(item => item.id !== id));
                       }
                     } finally {
                       setActionLoadingId(null);

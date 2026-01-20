@@ -34,6 +34,18 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchStats();
     fetchRecentOrders();
+    // Realtime: refresh stats and recent orders when orders change
+    const channel = supabase
+      .channel('admin-dashboard-orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchStats();
+        fetchRecentOrders();
+      })
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch {}
+    };
   }, []);
 
   const fetchStats = async () => {
