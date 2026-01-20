@@ -1,0 +1,12 @@
+id;name;description;image_url;display_order;is_active;created_at
+47fe400c-4ed3-4fa5-952b-510c6c2f7308;Starters;Appetizers and small bites;;1;true;2026-01-02 07:18:33.672208+00
+2dd6a502-9f34-4cbd-a8e0-25bcd2e7dba0;Main Course;Signature main dishes;;2;true;2026-01-02 07:18:33.672208+00
+389b2b5c-9c12-4f86-8862-52c25f6f21ce;Desserts;Sweet endings;;3;true;2026-01-02 07:18:33.672208+00
+18d6975e-c75b-4ae5-91e9-ca6197651c2e;Beverages;Drinks and refreshments;;4;true;2026-01-02 07:18:33.672208+00
+56bc8486-b043-4cb9-8229-14dbe6bbe6f6;Specials;Chef special items;;5;true;2026-01-02 07:18:33.672208+00
+9491ce34-8814-4735-bf6e-ea738c5131a1;SNACKS;;;0;true;2026-01-18 00:45:47.082232+00
+bfaa7098-8dde-4ed4-89d2-dddf70130a17;Salad & Raita;;;0;true;2026-01-18 00:49:42.121667+00
+fbf6a12d-013f-416e-81fe-caeb079da688;SALAD;;;0;true;2026-01-18 00:54:53.329907+00
+8dd7c139-7fe9-4c94-9495-075ebf0aa39e;Biryani & Rice/Pulao - Rice & Pulao;;;0;true;2026-01-18 00:59:16.262743+00
+4e7a5dd3-f893-41fd-83c0-37efe70f397a;Biryani & Rice/Pulao - Veg Biryani;;;0;true;2026-01-18 01:04:34.152869+00
+80fafc6d-0eaa-4c52-bbc4-2af3df664f03;Indian Curries (Main Course) - Mix Veg.;;;0;true;2026-01-18 01:07:51.417792+00
