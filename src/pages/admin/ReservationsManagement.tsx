@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, CalendarDays } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 
 interface Reservation {
   id: string;
@@ -22,6 +23,7 @@ export default function AdminReservations() {
   const [loading, setLoading] = useState(true);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [profilesByUser, setProfilesByUser] = useState<Record<string, any>>({});
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -104,6 +106,7 @@ export default function AdminReservations() {
                 <TableHead>Status</TableHead>
                 <TableHead>Notes</TableHead>
                 <TableHead>Created</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -121,6 +124,32 @@ export default function AdminReservations() {
                   const date = r.date ? new Date(r.date).toLocaleDateString('en-IN') : '-';
                   const time = r.time || '-';
                   const created = r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : '-';
+                  const onUpdateStatus = async (id: string, status: 'confirmed' | 'cancelled' | 'pending') => {
+                    try {
+                      setActionLoadingId(id);
+                      const { error } = await (supabase as any)
+                        .from('reservations')
+                        .update({ status })
+                        .eq('id', id);
+                      if (error) console.error('Failed to update status', error);
+                    } finally {
+                      setActionLoadingId(null);
+                    }
+                  };
+
+                  const onDelete = async (id: string) => {
+                    try {
+                      setActionLoadingId(id);
+                      const { error } = await (supabase as any)
+                        .from('reservations')
+                        .delete()
+                        .eq('id', id);
+                      if (error) console.error('Failed to delete reservation', error);
+                    } finally {
+                      setActionLoadingId(null);
+                    }
+                  };
+
                   return (
                     <TableRow key={r.id}>
                       <TableCell className="font-medium">{customer}</TableCell>
@@ -139,6 +168,11 @@ export default function AdminReservations() {
                       </TableCell>
                       <TableCell className="max-w-xs truncate">{r.notes || '-'}</TableCell>
                       <TableCell>{created}</TableCell>
+                      <TableCell className="space-x-2 whitespace-nowrap">
+                        <Button size="sm" variant="outline" disabled={actionLoadingId === r.id} onClick={() => onUpdateStatus(r.id, 'confirmed')}>Confirm</Button>
+                        <Button size="sm" variant="outline" disabled={actionLoadingId === r.id} onClick={() => onUpdateStatus(r.id, 'cancelled')}>Cancel</Button>
+                        <Button size="sm" variant="destructive" disabled={actionLoadingId === r.id} onClick={() => onDelete(r.id)}>Delete</Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })

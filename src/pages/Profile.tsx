@@ -21,6 +21,15 @@ interface ProfileData {
   total_orders: number;
 }
 
+interface UserReservation {
+  id: string;
+  date: string | null;
+  time: string | null;
+  party_size: number | null;
+  status: string | null;
+  created_at: string | null;
+}
+
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -36,6 +45,8 @@ const Profile = () => {
     loyalty_points: 0,
     total_orders: 0,
   });
+  const [resLoading, setResLoading] = useState(true);
+  const [myReservations, setMyReservations] = useState<UserReservation[]>([]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -64,6 +75,21 @@ const Profile = () => {
         });
       }
       setLoading(false);
+
+      // Load user's reservations history
+      setResLoading(true);
+      const { data: reservations, error: resErr } = await supabase
+        .from('reservations')
+        .select('id, date, time, party_size, status, created_at')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+      if (resErr) {
+        console.error('Failed to load user reservations:', resErr);
+        setMyReservations([]);
+      } else {
+        setMyReservations(reservations || []);
+      }
+      setResLoading(false);
     };
 
     loadProfile();
@@ -81,15 +107,15 @@ const Profile = () => {
 
     const { error } = await supabase
       .from('profiles')
-      .update({
+      .upsert({
+        user_id: session.user.id,
         full_name: profile.full_name,
         phone: profile.phone,
         email: profile.email,
         address: profile.address,
         city: profile.city,
         pincode: profile.pincode,
-      })
-      .eq('user_id', session.user.id);
+      }, { onConflict: 'user_id' });
 
     setSaving(false);
 
@@ -263,6 +289,49 @@ const Profile = () => {
                 )}
               </Button>
             </div>
+          </motion.div>
+
+          {/* My Reservations */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="glass-card rounded-xl p-6 mt-8"
+          >
+            <div className="mb-4">
+              <h2 className="text-xl font-display text-foreground">My Reservations</h2>
+              <p className="text-sm text-muted-foreground">Your recent bookings</p>
+            </div>
+
+            {resLoading ? (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              </div>
+            ) : myReservations.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No reservations found.</p>
+            ) : (
+              <div className="space-y-3">
+                {myReservations.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between p-4 rounded-lg bg-muted">
+                    <div>
+                      <p className="font-display text-foreground">
+                        {r.date || '-'} at {r.time || '-'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Party of {r.party_size ?? '-'} • {r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : '-'}
+                      </p>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      r.status === 'confirmed' ? 'bg-green-500/20 text-green-500' :
+                      r.status === 'cancelled' ? 'bg-red-500/20 text-red-500' :
+                      'bg-yellow-500/20 text-yellow-500'
+                    }`}>
+                      {r.status ? String(r.status).toUpperCase() : 'PENDING'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
