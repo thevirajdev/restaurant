@@ -81,7 +81,7 @@ function ExchangeSessionHandler() {
         });
       }
     }
-  }, [location.search]);
+  }, [location.search, location.hash]);
   return null;
 }
 
