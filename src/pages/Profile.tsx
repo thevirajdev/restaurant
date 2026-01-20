@@ -56,24 +56,54 @@ const Profile = () => {
         return;
       }
 
+      // Try to load profile; if missing, initialize from auth user
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', session.user.id)
         .single();
 
-      if (!error && data) {
-        setProfile({
-          full_name: data.full_name || '',
-          phone: data.phone || '',
-          email: data.email || session.user.email || '',
-          address: data.address || '',
-          city: data.city || '',
-          pincode: data.pincode || '',
-          loyalty_points: data.loyalty_points || 0,
-          total_orders: data.total_orders || 0,
-        });
+      let nextProfile = {
+        full_name: data?.full_name || (session.user.user_metadata?.full_name as string) || '',
+        phone: data?.phone || (session.user.phone as string) || '',
+        email: data?.email || session.user.email || '',
+        address: data?.address || '',
+        city: data?.city || '',
+        pincode: data?.pincode || '',
+        loyalty_points: data?.loyalty_points || 0,
+        total_orders: data?.total_orders || 0,
+      } as ProfileData;
+
+      if (error || !data) {
+        // Create/ensure a profile row exists using defaults from auth
+        const { error: upsertErr } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: session.user.id,
+            full_name: nextProfile.full_name,
+            phone: nextProfile.phone,
+            email: nextProfile.email,
+            address: nextProfile.address,
+            city: nextProfile.city,
+            pincode: nextProfile.pincode,
+          }, { onConflict: 'user_id' });
+        if (upsertErr) {
+          console.error('Failed to initialize profile:', upsertErr);
+        }
       }
+
+      // Compute total orders from orders table for accuracy
+      try {
+        const { count: ordersCount } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', session.user.id);
+        nextProfile.total_orders = ordersCount || 0;
+      } catch (e) {
+        // ignore count error, keep default
+      }
+
+      setProfile(nextProfile);
       setLoading(false);
 
       // Load user's reservations history
